@@ -11,8 +11,8 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("./static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
-	mux.HandleFunc("/{$}", homeHandler)
+	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+	mux.HandleFunc("GET /{$}", homeHandler)
 
 	dice.AddRoutes(mux)
 
