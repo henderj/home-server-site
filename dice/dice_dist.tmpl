@@ -2,7 +2,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <h1>Dice Roll Distribution</h1>
 
-<form class="card" hx-post="/update" hx-trigger="submit" hx-target="#chart-container" hx-swap="outerHTML">
+<form class="card" hx-post="/dice/update" hx-trigger="submit" hx-target="#chart-container" hx-swap="outerHTML">
     <label>Paste your rolls (one per line):</label>
     <textarea name="rolls" rows="8"></textarea>
 

@@ -11,8 +11,8 @@ import (
 )
 
 func AddRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/update", diceUpdateHandler)
-	mux.HandleFunc("/dice", diceHandler)
+	mux.HandleFunc("GET /dice", diceHandler)
+	mux.HandleFunc("POST /dice/update", diceUpdateHandler)
 }
 
 type ChartPoint struct {
