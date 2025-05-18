@@ -52,9 +52,9 @@ func (app *application) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /{$}", app.homeHandler)
 
 	mux.HandleFunc("GET /dice", app.diceHandler)
-	mux.HandleFunc("POST /dice/add-die", app.addDieHandler)
+	mux.HandleFunc("POST /dice/add-set", app.addDiceSetHandler)
 	mux.HandleFunc("POST /dice/add-roll", app.addRollHandler)
-	mux.HandleFunc("GET /dice/view-die", app.viewDieHandler)
+	mux.HandleFunc("GET /dice/view-set", app.viewSetHandler)
 }
 
 func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {

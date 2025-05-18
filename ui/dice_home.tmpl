@@ -1,17 +1,16 @@
 {{define "main"}}
-<h1>Dice</h1>
+<h1>Dice Sets</h1>
 <ul>
     {{range .}}
         <li>
-            <a role="button" href="/dice/view-die?id={{.ID}}">{{.Name}} (d{{.Sides}})</a>
+            <a role="button" href="/dice/view-set?set_id={{.ID}}">{{.Name}}</a>
         </li>
     {{end}}
 </ul>
 
-<h2>Add Die</h2>
-<form action="/dice/add-die" method="POST">
+<h2>Add Set</h2>
+<form action="/dice/add-set" method="POST">
     <input name="name" placeholder="Name" required>
-    <input name="sides" type="number" placeholder="Sides" required>
     <button type="submit">Add</button>
 </form>
 {{end}}
