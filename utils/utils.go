@@ -8,7 +8,7 @@ import (
 )
 
 func RenderPage(w http.ResponseWriter, pagePath string, pageData any) error {
-	tmpl, err := template.ParseFiles("./base.tmpl", pagePath)
+	tmpl, err := template.ParseFiles("./ui/base.tmpl", pagePath)
 	if err != nil {
 		return err
 	}
