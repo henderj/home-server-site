@@ -1,0 +1,17 @@
+{{define "main"}}
+<h1>Dice</h1>
+<ul>
+    {{range .}}
+        <li>
+            <a role="button" href="/dice/view-die?id={{.ID}}">{{.Name}} (d{{.Sides}})</a>
+        </li>
+    {{end}}
+</ul>
+
+<h2>Add Die</h2>
+<form action="/dice/add-die" method="POST">
+    <input name="name" placeholder="Name" required>
+    <input name="sides" type="number" placeholder="Sides" required>
+    <button type="submit">Add</button>
+</form>
+{{end}}
