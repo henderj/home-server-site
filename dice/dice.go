@@ -94,7 +94,7 @@ func diceHandler(w http.ResponseWriter, r *http.Request) {
 		dice = append(dice, d)
 	}
 
-	utils.RenderPage(w, "./dice/dice_home.tmpl", dice)
+	utils.RenderPage(w, "./ui/dice_home.tmpl", dice)
 }
 
 func addDieHandler(w http.ResponseWriter, r *http.Request) {
@@ -236,5 +236,5 @@ func viewDieHandler(w http.ResponseWriter, r *http.Request) {
 		ID: id,
 		JsonData: template.JS(jsonData),
 	}
-	utils.RenderPage(w, "./dice/dice_dist.tmpl", pageData)
+	utils.RenderPage(w, "./ui/dice_dist.tmpl", pageData)
 }
