@@ -29,6 +29,7 @@ func main() {
 	}
 
 	db := setupDB(dbDsn, "setup.sql")
+	defer db.Close()
 	mux := http.NewServeMux()
 
 	app := application{
@@ -67,7 +68,6 @@ func setupDB(dbDsn, setupFile string) *sql.DB {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v\n", err)
 	}
-	defer db.Close()
 
 	dbSetupFile, err := os.ReadFile(setupFile)
 	if err != nil {
