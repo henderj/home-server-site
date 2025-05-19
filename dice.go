@@ -149,6 +149,14 @@ func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	rollValues := strings.Split(r.FormValue("rolls"), "\n")
 
+	query := `SELECT set_id FROM dice WHERE id = ?`
+	var setID int
+	err = app.db.QueryRow(query, dieID).Scan(&setID)
+	if err != nil {
+		app.internalServerError(w, err)
+		return
+	}
+
 	tx, err := app.db.Begin()
 	if err != nil {
 		app.internalServerError(w, err)
@@ -172,7 +180,7 @@ func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/dice/view-die?id=%v", dieID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v", setID), http.StatusSeeOther)
 }
 
 func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
@@ -272,11 +280,13 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 
 	pageData := struct {
 		SetName  string
+		SetID int
 		Dice     []DieSelected
 		Die      Die
 		JsonData template.JS
 	}{
 		SetName:  set.Name,
+		SetID: setID,
 		Dice: diceSelected,
 		Die: Die{ID: dieID, Sides: selectedDieSides},
 		JsonData: template.JS(jsonData),
