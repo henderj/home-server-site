@@ -1,17 +1,18 @@
 {{define "main"}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<h1>{{.SetName}}</h1>
+<h1>{{.Set.Name}}</h1>
 <div role="group">
     {{range .Dice}}
-        <button {{if .Selected}}aria-current="true"{{end}}>d{{.Sides}}</button>
+    <a role="button" href="/dice/view-set?set_id={{$.Set.ID}}&selected_die={{.Sides}}" {{if
+        .Selected}}aria-current="true" {{end}}>d{{.Sides}}</a>
     {{end}}
 </div>
 <div>
-    <h2>{{.SetName}} (d{{.Die.Sides}})</h2>
+    <h2>{{.Set.Name}} (d{{.Die.Sides}})</h2>
     <form action="/dice/add-roll" method="POST">
         <textarea name="rolls" rows="4" cols="30" placeholder="Enter rolls, one per line"></textarea><br>
-        <input type="hidden" name="die_id" value="{{.Die.ID}}">
-        <input type="hidden" name="set_id" value="{{.SetID}}">
+        <input type="hidden" name="die_sides" value="{{.Die.Sides}}">
+        <input type="hidden" name="set_id" value="{{.Set.ID}}">
         <button type="submit">Add Rolls</button>
     </form>
     <canvas id="rollChart" width="600" height="300"></canvas>
@@ -27,13 +28,29 @@
             data: {
                 labels: data.map(d => d.value),
                 datasets: [
-                    {label: 'Actual', data: data.map(d => d.count), backgroundColor: 'rgba(75,192,192,0.5)'},
-                    ...(data[0]?.ideal !== undefined ? [{
-                        label: 'Ideal', data: data.map(d => d.ideal), backgroundColor: 'rgba(153,102,255,0.5)'
-                    }] : [])
+                    {
+                        label: 'Actual',
+                        data: data.map(d => d.count),
+                        backgroundColor: 'rgba(75,192,192,0.5)',
+                        order: 2
+                    },
+                    {
+                        label: 'Ideal',
+                        type: 'line',
+                        data: data.map(d => d.ideal),
+                        borderColor: 'rgba(153,102,255,0.5)',
+                        borderWidth: 4,
+                        fill: false,
+                        pointRadius: 0,
+                        order: 1
+                    }
                 ]
             },
-            options: {scales: {y: {beginAtZero: true}}}
+            options: {
+                scales: {
+                    y: {beginAtZero: true}
+                }
+            }
         });
     })();
 </script>

@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -25,7 +27,6 @@ type DiceSet struct {
 }
 
 type Die struct {
-	ID    int
 	Sides int
 }
 
@@ -42,7 +43,7 @@ func getDiceInSet(db *sql.DB, setID int) ([]Die, error) {
 	var dice []Die
 	for rows.Next() {
 		var d Die
-		rows.Scan(&d.ID, &d.Sides)
+		rows.Scan(&d.Sides)
 		dice = append(dice, d)
 	}
 
@@ -142,18 +143,26 @@ func (app *application) addDiceSetHandler(w http.ResponseWriter, r *http.Request
 
 func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	dieID, err := strconv.Atoi(r.FormValue("die_id"))
+	dieSides, err := strconv.Atoi(r.FormValue("die_sides"))
 	if err != nil {
-		app.badRequest(w, "die_id must be a number")
+		app.badRequest(w, "die_sides must be a number")
 		return
+	}
+	setID, err := strconv.Atoi(r.FormValue("set_id"))
+	if err != nil {
+		app.badRequest(w, "set_id must be a number")
 	}
 	rollValues := strings.Split(r.FormValue("rolls"), "\n")
 
-	query := `SELECT set_id FROM dice WHERE id = ?`
-	var setID int
-	err = app.db.QueryRow(query, dieID).Scan(&setID)
+	var dieID int
+	query := `SELECT id FROM dice WHERE set_id = ? AND sides = ?`
+	err = app.db.QueryRow(query, setID, dieSides).Scan(&dieID)
 	if err != nil {
-		app.internalServerError(w, err)
+		if errors.Is(err, sql.ErrNoRows) {
+			app.badRequest(w, "dice does not exist")
+		} else {
+			app.internalServerError(w, err)
+		}
 		return
 	}
 
@@ -180,7 +189,7 @@ func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v", setID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v&selected_die=%v", setID, dieSides), http.StatusSeeOther)
 }
 
 func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
@@ -249,6 +258,7 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 	var ideal *float64
 	if total > 0 {
 		f := float64(total) / float64(selectedDieSides)
+		f = math.Ceil(f)
 		ideal = &f
 	}
 
@@ -279,16 +289,14 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageData := struct {
-		SetName  string
-		SetID int
+		Set      DiceSet
 		Dice     []DieSelected
 		Die      Die
 		JsonData template.JS
 	}{
-		SetName:  set.Name,
-		SetID: setID,
-		Dice: diceSelected,
-		Die: Die{ID: dieID, Sides: selectedDieSides},
+		Set:      set,
+		Dice:     diceSelected,
+		Die:      Die{Sides: selectedDieSides},
 		JsonData: template.JS(jsonData),
 	}
 	err = app.renderPage(w, "./ui/dice_dist.tmpl", pageData)
