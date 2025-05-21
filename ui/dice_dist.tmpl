@@ -1,7 +1,7 @@
 {{define "main"}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <h1>{{.Set.Name}}</h1>
-<div role="group">
+<div role="grid">
     {{range .Dice}}
     <a role="button" href="/dice/view-set?set_id={{$.Set.ID}}&selected_die={{.Sides}}" {{if
         .Selected}}aria-current="true" {{end}}>d{{.Sides}}</a>
