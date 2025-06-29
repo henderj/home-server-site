@@ -28,7 +28,7 @@ func main() {
 		dbDsn = "./database.db"
 	}
 
-	db := setupDB(dbDsn, "setup.sql")
+	db := setupDB(dbDsn, "migrations/001-setup.sql")
 	defer db.Close()
 	mux := http.NewServeMux()
 
@@ -69,6 +69,7 @@ func setupDB(dbDsn, setupFile string) *sql.DB {
 		log.Fatalf("Failed to open database: %v\n", err)
 	}
 
+	// TODO: do migrations only if db is new
 	dbSetupFile, err := os.ReadFile(setupFile)
 	if err != nil {
 		log.Fatalf("Failed to read sql setup file: %v\n", err)

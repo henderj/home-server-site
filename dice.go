@@ -27,13 +27,15 @@ type DiceSet struct {
 }
 
 type Die struct {
+	ID    int
+	Name  string
 	Sides int
 }
 
 var DieSides []int = []int{4, 6, 8, 10, 12, 20}
 
 func getDiceInSet(db *sql.DB, setID int) ([]Die, error) {
-	query := `SELECT id, sides FROM dice WHERE set_id = ? ORDER BY sides`
+	query := `SELECT id, name, sides FROM dice WHERE set_id = ? ORDER BY sides`
 	rows, err := db.Query(query, setID)
 	if err != nil {
 		return nil, err
@@ -43,7 +45,7 @@ func getDiceInSet(db *sql.DB, setID int) ([]Die, error) {
 	var dice []Die
 	for rows.Next() {
 		var d Die
-		rows.Scan(&d.Sides)
+		rows.Scan(&d.ID, &d.Name, &d.Sides)
 		dice = append(dice, d)
 	}
 
@@ -199,14 +201,9 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	selectedDieSides, err := strconv.Atoi(r.URL.Query().Get("selected_die"))
+	selectedDieID, err := strconv.Atoi(r.URL.Query().Get("selected_die"))
 	if err != nil {
-		selectedDieSides = 12
-	}
-
-	if !slices.Contains(DieSides, selectedDieSides) {
-		app.badRequest(w, "invalid number of sides")
-		return
+		selectedDieID = -1
 	}
 
 	var set DiceSet
@@ -218,29 +215,33 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	set.ID = setID
-	set.Dice = make([]Die, len(DieSides))
-	for i, sides := range DieSides {
-		set.Dice[i] = Die{Sides: sides}
+	setDice, err := getDiceInSet(app.db, setID)
+	if err != nil {
+		app.internalServerError(w, err)
+		return
+	}
+	set.Dice = setDice
+
+	if selectedDieID == -1 && len(set.Dice) > 0 {
+		selectedDieID = set.Dice[0].ID
 	}
 
-	var dieID int
-	query := `SELECT id FROM dice WHERE set_id = ? AND sides = ?`
-	err = app.db.QueryRow(query, setID, selectedDieSides).Scan(&dieID)
-	if err != nil {
-		log.Println(err)
+	selectedDieIndex := slices.IndexFunc(set.Dice, func(d Die) bool { return d.ID == selectedDieID })
+	if selectedDieIndex == -1 {
 		app.badRequest(w, "cannot find selected die")
 		return
 	}
+	selectedDie := set.Dice[selectedDieIndex]
 
 	query2 := `SELECT value FROM roll WHERE die_id = ?`
-	rows, err := app.db.Query(query2, dieID)
+	rows, err := app.db.Query(query2, selectedDieID)
 	defer rows.Close()
 	if err != nil {
 		app.internalServerError(w, err)
 		return
 	}
 
-	counts := make([]int, selectedDieSides)
+	counts := make([]int, selectedDie.Sides)
 	total := 0
 	for rows.Next() {
 		var v int
@@ -249,7 +250,7 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 			app.internalServerError(w, err)
 			return
 		}
-		if v >= 1 && v <= selectedDieSides {
+		if v >= 1 && v <= selectedDie.Sides {
 			counts[v-1]++
 			total++
 		}
@@ -257,13 +258,13 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 
 	var ideal *float64
 	if total > 0 {
-		f := float64(total) / float64(selectedDieSides)
+		f := float64(total) / float64(selectedDie.Sides)
 		f = math.Ceil(f)
 		ideal = &f
 	}
 
 	var data []ChartPoint
-	for i := range selectedDieSides {
+	for i := range selectedDie.Sides {
 		p := ChartPoint{Value: i + 1, Count: counts[i]}
 		if ideal != nil {
 			p.Ideal = ideal
@@ -284,20 +285,22 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 
 	diceSelected := make([]DieSelected, len(set.Dice))
 	for i, die := range set.Dice {
-		selected := die.Sides == selectedDieSides
+		selected := i == selectedDieIndex
 		diceSelected[i] = DieSelected{Die: die, Selected: selected}
 	}
 
 	pageData := struct {
-		Set      DiceSet
-		Dice     []DieSelected
-		Die      Die
-		JsonData template.JS
+		Set        DiceSet
+		Dice       []DieSelected
+		Die        Die
+		TotalRolls int
+		JsonData   template.JS
 	}{
-		Set:      set,
-		Dice:     diceSelected,
-		Die:      Die{Sides: selectedDieSides},
-		JsonData: template.JS(jsonData),
+		Set:        set,
+		Dice:       diceSelected,
+		Die:        selectedDie,
+		TotalRolls: total,
+		JsonData:   template.JS(jsonData),
 	}
 	err = app.renderPage(w, "./ui/dice_dist.tmpl", pageData)
 	if err != nil {

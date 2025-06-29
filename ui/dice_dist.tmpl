@@ -3,18 +3,19 @@
 <h1>{{.Set.Name}}</h1>
 <div role="grid">
     {{range .Dice}}
-    <a role="button" href="/dice/view-set?set_id={{$.Set.ID}}&selected_die={{.Sides}}" {{if
-        .Selected}}aria-current="true" {{end}}>d{{.Sides}}</a>
+    <a role="button" href="/dice/view-set?set_id={{$.Set.ID}}&selected_die={{.Die.ID}}" {{if
+        .Selected}}aria-current="true" {{end}}>{{.Die.Name}}</a>
     {{end}}
 </div>
 <div>
-    <h2>{{.Set.Name}} (d{{.Die.Sides}})</h2>
+    <h2>{{.Set.Name}} {{.Die.Name}}</h2>
     <form action="/dice/add-roll" method="POST">
         <textarea name="rolls" rows="4" cols="30" placeholder="Enter rolls, one per line"></textarea><br>
-        <input type="hidden" name="die_sides" value="{{.Die.Sides}}">
+        <input type="hidden" name="die_id" value="{{.Die.ID}}">
         <input type="hidden" name="set_id" value="{{.Set.ID}}">
         <button type="submit">Add Rolls</button>
     </form>
+    <p><strong>Total rolls: </strong>{{.TotalRolls}}</p>
     <canvas id="rollChart" width="600" height="300"></canvas>
     <script type="application/json" id="chart-data">{{.JsonData}}</script>
 </div>
