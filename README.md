@@ -54,6 +54,8 @@ The server will start on port 8080 by default. You can change the port by settin
 -   Frontend interactions are enhanced with `htmx`.
 -   The database is SQLite, and migrations are handled with raw SQL scripts.
 -   The application is designed to be deployed as a Docker container.
+-   This project uses the CUBE CSS system with `@layer` directives for styling.
+
 
 ## License
 
