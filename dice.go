@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -145,28 +144,29 @@ func (app *application) addDiceSetHandler(w http.ResponseWriter, r *http.Request
 
 func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	dieSides, err := strconv.Atoi(r.FormValue("die_sides"))
+	dieID, err := strconv.Atoi(r.FormValue("die_id"))
 	if err != nil {
-		app.badRequest(w, "die_sides must be a number")
+		app.badRequest(w, "die_id must be a number")
 		return
 	}
 	setID, err := strconv.Atoi(r.FormValue("set_id"))
 	if err != nil {
 		app.badRequest(w, "set_id must be a number")
+		return
 	}
 	rollValues := strings.Split(r.FormValue("rolls"), "\n")
 
-	var dieID int
-	query := `SELECT id FROM dice WHERE set_id = ? AND sides = ?`
-	err = app.db.QueryRow(query, setID, dieSides).Scan(&dieID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			app.badRequest(w, "dice does not exist")
-		} else {
-			app.internalServerError(w, err)
-		}
-		return
-	}
+  // TODO: make sure die exists
+	// query := `SELECT id FROM dice WHERE die_id = ?`
+	// err = app.db.QueryRow(query, dieID).Scan(&dieID)
+	// if err != nil {
+	// 	if errors.Is(err, sql.ErrNoRows) {
+	// 		app.badRequest(w, "dice does not exist")
+	// 	} else {
+	// 		app.internalServerError(w, err)
+	// 	}
+	// 	return
+	// }
 
 	tx, err := app.db.Begin()
 	if err != nil {
@@ -191,7 +191,7 @@ func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v&selected_die=%v", setID, dieSides), http.StatusSeeOther)
+  http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v&selected_die=%v", setID, dieID), http.StatusSeeOther)
 }
 
 func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
