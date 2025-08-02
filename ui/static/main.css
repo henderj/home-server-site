@@ -116,6 +116,10 @@
     gap: var(--spacing-2);
   }
 
+  nav li {
+    margin-bottom: 0;
+  }
+
   nav li a {
     display: block;
     padding: var(--spacing-1) var(--spacing-2);
@@ -137,6 +141,36 @@
     nav li {
       width: 100%;
     }
+  }
+
+  div[role="grid"] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-3);
+  }
+
+  div[role="grid"] > a[role="button"] {
+    text-align: center;
+    padding: var(--spacing-2);
+    background-color: var(--color-secondary);
+    color: white;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    transition: background-color 0.2s;
+  }
+
+  div[role="grid"] > a[role="button"]:hover {
+    background-color: #5a6268;
+  }
+
+  div[role="grid"] > a[role="button"][aria-current="true"] {
+    background-color: var(--color-primary);
+  }
+
+  canvas {
+    max-width: 100%;
+    height: auto;
   }
 }
 
