@@ -4,6 +4,7 @@
     {{range .}}
         <li>
             <a role="button" href="/dice/view-set?set_id={{.ID}}">{{.Name}}</a>
+            <button hx-delete="/dice/delete-set?set_id={{.ID}}" hx-target="closest li" hx-swap="outerHTML">Delete</button>
         </li>
     {{end}}
 </ul>

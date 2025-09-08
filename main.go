@@ -28,7 +28,7 @@ func main() {
 		dbDsn = "./database.db"
 	}
 
-	db := setupDB(dbDsn, "migrations/001-setup.sql")
+	db := setupDB(dbDsn, []string{"migrations/001-setup.sql", "migrations/002-add-name-column.sql", "migrations/003-add-cascade-delete.sql"})
 	defer db.Close()
 	mux := http.NewServeMux()
 
@@ -55,39 +55,52 @@ func (app *application) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /dice/add-set", app.addDiceSetHandler)
 	mux.HandleFunc("POST /dice/add-roll", app.addRollHandler)
 	mux.HandleFunc("GET /dice/view-set", app.viewSetHandler)
+	mux.HandleFunc("DELETE /dice/delete-set", app.deleteDiceSetHandler)
 }
 
 func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
-	app.renderPage(w, "./ui/home.tmpl", nil)
+	app.renderPage(w, r, "./ui/home.tmpl", nil)
 }
 
 // Connects to and sets up DB.
 // Will exit process if connection or setup fails
-func setupDB(dbDsn, setupFile string) *sql.DB {
+func setupDB(dbDsn string, setupFiles []string) *sql.DB {
 	db, err := sql.Open("sqlite3", dbDsn)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v\n", err)
 	}
 
 	// TODO: do migrations only if db is new
-	dbSetupFile, err := os.ReadFile(setupFile)
-	if err != nil {
-		log.Fatalf("Failed to read sql setup file: %v\n", err)
-	}
-	_, err = db.Exec(string(dbSetupFile))
-	if err != nil {
-		log.Fatalf("Failed to execute sql setup file: %v\n", err)
-	}
+	// for _, setupFile := range setupFiles {
+	// 	dbSetupFile, err := os.ReadFile(setupFile)
+	// 	if err != nil {
+	// 		log.Fatalf("Failed to read sql setup file: %v\n", err)
+	// 	}
+	// 	_, err = db.Exec(string(dbSetupFile))
+	// 	if err != nil {
+	// 		log.Fatalf("Failed to execute sql setup file: %v\n", err)
+	// 	}
+	// }
 	log.Println("DB setup successfully")
 	return db
 }
 
-func (*application) renderPage(w http.ResponseWriter, pagePath string, pageData any) error {
+func (app *application) renderPage(w http.ResponseWriter, r *http.Request, pagePath string, pageData any) {
 	tmpl, err := template.ParseFiles("./ui/base.tmpl", pagePath)
 	if err != nil {
-		return err
+		app.internalServerError(w, err)
+		return
 	}
-	return tmpl.ExecuteTemplate(w, "base", pageData)
+
+	templateName := "base"
+	if r.Header.Get("HX-Request") == "true" {
+		templateName = "main"
+	}
+
+	err = tmpl.ExecuteTemplate(w, templateName, pageData)
+	if err != nil {
+		app.internalServerError(w, err)
+	}
 }
 
 func (*application) internalServerError(w http.ResponseWriter, err error) {

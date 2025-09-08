@@ -84,10 +84,29 @@ func (app *application) diceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.renderPage(w, "./ui/dice_home.tmpl", diceSets)
+	app.renderPage(w, r, "./ui/dice_home.tmpl", diceSets)
+}
+
+func (app *application) deleteDiceSetHandler(w http.ResponseWriter, r *http.Request) {
+	setID, err := strconv.Atoi(r.URL.Query().Get("set_id"))
+	if err != nil {
+		app.badRequest(w, "set_id must be an integer")
+		return
+	}
+
+	err = app.deleteDiceSet(setID)
 	if err != nil {
 		app.internalServerError(w, err)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (app *application) deleteDiceSet(id int) error {
+	query := `DELETE FROM dice_set WHERE id = ?`
+	_, err := app.db.Exec(query, id)
+	return err
 }
 
 func (app *application) addDiceSetHandler(w http.ResponseWriter, r *http.Request) {
@@ -302,8 +321,5 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 		TotalRolls: total,
 		JsonData:   template.JS(jsonData),
 	}
-	err = app.renderPage(w, "./ui/dice_dist.tmpl", pageData)
-	if err != nil {
-		app.internalServerError(w, err)
-	}
+	app.renderPage(w, r, "./ui/dice_dist.tmpl", pageData)
 }
