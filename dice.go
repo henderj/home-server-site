@@ -31,7 +31,7 @@ type Die struct {
 	Sides int
 }
 
-var DieSides []int = []int{4, 6, 8, 10, 12, 20}
+var DieSides []int = []int{4, 6, 8, 10, 10, 12, 20}
 
 func getDiceInSet(db *sql.DB, setID int) ([]Die, error) {
 	query := `SELECT id, name, sides FROM dice WHERE set_id = ? ORDER BY sides`
@@ -134,7 +134,7 @@ func (app *application) addDiceSetHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	stmtSql := `INSERT INTO dice (sides, set_id) VALUES (?, ?)`
+	stmtSql := `INSERT INTO dice (sides, set_id, name) VALUES (?, ?, ?)`
 	stmt, err := tx.Prepare(stmtSql)
 	if err != nil {
 		app.internalServerError(w, err)
@@ -143,8 +143,14 @@ func (app *application) addDiceSetHandler(w http.ResponseWriter, r *http.Request
 	}
 	defer stmt.Close()
 
+	d10Count := 0
 	for _, sides := range DieSides {
-		_, err = stmt.Exec(sides, setID)
+		name := fmt.Sprintf("d%v", sides)
+		if sides == 10 {
+			d10Count++
+			name = fmt.Sprintf("d10 (%v)", d10Count)
+		}
+		_, err = stmt.Exec(sides, setID, name)
 		if err != nil {
 			app.internalServerError(w, err)
 			tx.Rollback()
