@@ -1,5 +1,6 @@
 {{define "main"}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<a href="/dice" role="button" class="secondary">Back</a>
 <h1>{{.Set.Name}}</h1>
 <div role="grid">
     {{range .Dice}}
@@ -9,12 +10,19 @@
 </div>
 <div>
     <h2>{{.Set.Name}} {{.Die.Name}}</h2>
-    <form action="/dice/add-roll" method="POST">
+    <form action="/dice/add-roll" method="POST" id="add-rolls-form">
         <textarea name="rolls" rows="4" cols="30" placeholder="Enter rolls, one per line"></textarea><br>
         <input type="hidden" name="die_id" value="{{.Die.ID}}">
         <input type="hidden" name="set_id" value="{{.Set.ID}}">
         <button type="submit">Add Rolls</button>
     </form>
+    <script>
+        document.addEventListener('keydown', function(event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                document.getElementById('add-rolls-form').submit();
+            }
+        });
+    </script>
     <p><strong>Total rolls: </strong>{{.TotalRolls}}</p>
     <canvas id="rollChart" width="600" height="300"></canvas>
     <script type="application/json" id="chart-data">{{.JsonData}}</script>
