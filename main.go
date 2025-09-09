@@ -86,7 +86,13 @@ func setupDB(dbDsn string, setupFiles []string) *sql.DB {
 }
 
 func (app *application) renderPage(w http.ResponseWriter, r *http.Request, pagePath string, pageData any) {
-	tmpl, err := template.ParseFiles("./ui/base.tmpl", pagePath)
+	funcs := template.FuncMap{
+		"sub": func(a, b int) int {
+			return a - b
+		},
+	}
+
+	tmpl, err := template.New("base").Funcs(funcs).ParseFiles("./ui/base.tmpl", pagePath)
 	if err != nil {
 		app.internalServerError(w, err)
 		return

@@ -221,6 +221,11 @@ func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
   http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v&selected_die=%v", setID, dieID), http.StatusSeeOther)
 }
 
+type BiasSummaryGroup struct {
+	Category string
+	Faces    []int
+}
+
 type BiasStats struct {
 	TotalRolls              int
 	ChiSquared              float64
@@ -230,6 +235,7 @@ type BiasStats struct {
 	IsBiased                bool
 	SmallSampleWarning      bool
 	PerFaceStats            []FaceStats
+	Summary                 []BiasSummaryGroup
 }
 
 type FaceStats struct {
@@ -301,6 +307,40 @@ func calculateBiasStats(rolls []int, sides int) *BiasStats {
 
 	smallSampleWarning := n < 30 || expected < 5
 
+	// Create summary
+	categories := map[string][]int{}
+	for _, stat := range perFaceStats {
+		var category string
+		switch {
+		case stat.StandardizedResidual <= -3:
+			category = "highly unlikely"
+		case stat.StandardizedResidual > -3 && stat.StandardizedResidual <= -1.5:
+			category = "moderately unlikely"
+		case stat.StandardizedResidual > -1.5 && stat.StandardizedResidual < -0.5:
+			category = "slightly unlikely"
+		case stat.StandardizedResidual >= -0.5 && stat.StandardizedResidual <= 0.5:
+			category = "equally likely"
+		case stat.StandardizedResidual > 0.5 && stat.StandardizedResidual < 1.5:
+			category = "slightly more likely"
+		case stat.StandardizedResidual >= 1.5 && stat.StandardizedResidual < 3:
+			category = "moderately more likely"
+		case stat.StandardizedResidual >= 3:
+			category = "highly likely"
+		}
+		if category != "" {
+			categories[category] = append(categories[category], stat.Face)
+		}
+	}
+
+	var summary []BiasSummaryGroup
+	// Define order
+	order := []string{"highly likely", "moderately more likely", "slightly more likely", "equally likely", "slightly unlikely", "moderately unlikely", "highly unlikely"}
+	for _, category := range order {
+		if faces, ok := categories[category]; ok {
+			summary = append(summary, BiasSummaryGroup{Category: category, Faces: faces})
+		}
+	}
+
 	return &BiasStats{
 		TotalRolls:             n,
 		ChiSquared:             chiSquared,
@@ -310,6 +350,7 @@ func calculateBiasStats(rolls []int, sides int) *BiasStats {
 		IsBiased:               pValue < 0.05 && !smallSampleWarning,
 		SmallSampleWarning:     smallSampleWarning,
 		PerFaceStats:           perFaceStats,
+		Summary:                summary,
 	}
 }
 

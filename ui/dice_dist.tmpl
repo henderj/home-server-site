@@ -61,6 +61,19 @@
         </ul>
     </article>
     <article>
+        <header><strong>Textual Summary</strong></header>
+        {{range $summaryGroup := .BiasStats.Summary}}
+            {{if and (ne $summaryGroup.Category "equally likely") (gt (len $summaryGroup.Faces) 0)}}
+                <p>It is <em>{{$summaryGroup.Category}}</em> to roll a 
+                {{$faceCount := len $summaryGroup.Faces}}
+                {{range $i, $face := $summaryGroup.Faces}}
+                    {{if eq $faceCount 1}}{{$face}}{{else if eq $i (sub $faceCount 1)}}and {{$face}}{{else if eq $i (sub $faceCount 2)}}{{$face}} {{else}}{{$face}}, {{end}}
+                {{end}}
+                .</p>
+            {{end}}
+        {{end}}
+    </article>
+    <article>
         <header><strong>Per-Face Analysis</strong></header>
         <details>
             <summary>Explain</summary>
