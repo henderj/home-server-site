@@ -81,7 +81,11 @@
                     <td>{{.Face}}</td>
                     <td>{{.ObservedFrequency}}</td>
                     <td>{{printf "%.2f" .ExpectedFrequency}}</td>
-                    <td>{{printf "%.2f" .StandardizedResidual}}</td>
+                    <td>
+                        <span style="background-color: {{.ResidualColor}}; color: {{.ResidualTextColor}}; padding: 2px 8px; border-radius: 12px;">
+                            {{printf "%.2f" .StandardizedResidual}}
+                        </span>
+                    </td>
                 </tr>
                 {{end}}
             </tbody>

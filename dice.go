@@ -233,11 +233,13 @@ type BiasStats struct {
 }
 
 type FaceStats struct {
-	Face                int
-	ObservedFrequency   int
-	ExpectedFrequency   float64
+	Face                 int
+	ObservedFrequency    int
+	ExpectedFrequency    float64
 	EstimatedProbability float64
 	StandardizedResidual float64
+	ResidualColor        string
+	ResidualTextColor    string
 }
 
 func calculateBiasStats(rolls []int, sides int) *BiasStats {
@@ -253,7 +255,7 @@ func calculateBiasStats(rolls []int, sides int) *BiasStats {
 	}
 
 	expected := float64(n) / k
-	
+
 	var chiSquared float64
 	var totalVariationDistance float64
 	var perFaceStats []FaceStats
@@ -261,18 +263,34 @@ func calculateBiasStats(rolls []int, sides int) *BiasStats {
 	for i := 1; i <= sides; i++ {
 		oi := float64(observed[i])
 		ei := expected
-		
+
 		chiSquared += math.Pow(oi-ei, 2) / ei
-		
+
 		pi := oi / float64(n)
 		totalVariationDistance += math.Abs(pi - (1.0 / k))
+
+		residual := (oi - ei) / math.Sqrt(ei)
+		var residualColor, residualTextColor string
+		switch {
+		case math.Abs(residual) >= 4:
+			residualColor = "red"
+			residualTextColor = "white"
+		case math.Abs(residual) >= 2:
+			residualColor = "yellow"
+			residualTextColor = "black"
+		default:
+			residualColor = "green"
+			residualTextColor = "white"
+		}
 
 		perFaceStats = append(perFaceStats, FaceStats{
 			Face:                 i,
 			ObservedFrequency:    int(oi),
 			ExpectedFrequency:    ei,
 			EstimatedProbability: pi,
-			StandardizedResidual: (oi - ei) / math.Sqrt(ei),
+			StandardizedResidual: residual,
+			ResidualColor:        residualColor,
+			ResidualTextColor:    residualTextColor,
 		})
 	}
 	totalVariationDistance /= 2.0
