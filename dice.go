@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"gonum.org/v1/gonum/stat/distuv"
 )
 
 type ChartPoint struct {
@@ -219,6 +221,80 @@ func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {
   http.Redirect(w, r, fmt.Sprintf("/dice/view-set?set_id=%v&selected_die=%v", setID, dieID), http.StatusSeeOther)
 }
 
+type BiasStats struct {
+	TotalRolls              int
+	ChiSquared              float64
+	PValue                  float64
+	CramersV                float64
+	TotalVariationDistance  float64
+	IsBiased                bool
+	SmallSampleWarning      bool
+	PerFaceStats            []FaceStats
+}
+
+type FaceStats struct {
+	Face                int
+	ObservedFrequency   int
+	ExpectedFrequency   float64
+	EstimatedProbability float64
+	StandardizedResidual float64
+}
+
+func calculateBiasStats(rolls []int, sides int) *BiasStats {
+	n := len(rolls)
+	if n == 0 {
+		return nil
+	}
+
+	k := float64(sides)
+	observed := make(map[int]int)
+	for _, roll := range rolls {
+		observed[roll]++
+	}
+
+	expected := float64(n) / k
+	
+	var chiSquared float64
+	var totalVariationDistance float64
+	var perFaceStats []FaceStats
+
+	for i := 1; i <= sides; i++ {
+		oi := float64(observed[i])
+		ei := expected
+		
+		chiSquared += math.Pow(oi-ei, 2) / ei
+		
+		pi := oi / float64(n)
+		totalVariationDistance += math.Abs(pi - (1.0 / k))
+
+		perFaceStats = append(perFaceStats, FaceStats{
+			Face:                 i,
+			ObservedFrequency:    int(oi),
+			ExpectedFrequency:    ei,
+			EstimatedProbability: pi,
+			StandardizedResidual: (oi - ei) / math.Sqrt(ei),
+		})
+	}
+	totalVariationDistance /= 2.0
+
+	df := k - 1
+	pValue := 1 - distuv.ChiSquared{K: df, Src: nil}.CDF(chiSquared)
+	cramersV := math.Sqrt(chiSquared / (float64(n) * df))
+
+	smallSampleWarning := n < 30 || expected < 5
+
+	return &BiasStats{
+		TotalRolls:             n,
+		ChiSquared:             chiSquared,
+		PValue:                 pValue,
+		CramersV:               cramersV,
+		TotalVariationDistance: totalVariationDistance,
+		IsBiased:               pValue < 0.05 && !smallSampleWarning,
+		SmallSampleWarning:     smallSampleWarning,
+		PerFaceStats:           perFaceStats,
+	}
+}
+
 func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 	setID, err := strconv.Atoi(r.URL.Query().Get("set_id"))
 	if err != nil {
@@ -266,6 +342,7 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var allRolls []int
 	counts := make([]int, selectedDie.Sides)
 	total := 0
 	for rows.Next() {
@@ -276,6 +353,7 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if v >= 1 && v <= selectedDie.Sides {
+			allRolls = append(allRolls, v)
 			counts[v-1]++
 			total++
 		}
@@ -314,18 +392,22 @@ func (app *application) viewSetHandler(w http.ResponseWriter, r *http.Request) {
 		diceSelected[i] = DieSelected{Die: die, Selected: selected}
 	}
 
+	biasStats := calculateBiasStats(allRolls, selectedDie.Sides)
+
 	pageData := struct {
 		Set        DiceSet
 		Dice       []DieSelected
 		Die        Die
 		TotalRolls int
 		JsonData   template.JS
+		BiasStats  *BiasStats
 	}{
 		Set:        set,
 		Dice:       diceSelected,
 		Die:        selectedDie,
 		TotalRolls: total,
 		JsonData:   template.JS(jsonData),
+		BiasStats:  biasStats,
 	}
 	app.renderPage(w, r, "./ui/dice_dist.tmpl", pageData)
 }

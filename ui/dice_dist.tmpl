@@ -19,6 +19,77 @@
     <canvas id="rollChart" width="600" height="300"></canvas>
     <script type="application/json" id="chart-data">{{.JsonData}}</script>
 </div>
+
+{{if .BiasStats}}
+<div class="grid">
+    <article>
+        <header><strong>Overall Bias Report</strong></header>
+        {{if .BiasStats.SmallSampleWarning}}
+        <p><strong>Warning:</strong> The sample size is too small for reliable bias detection ({{.BiasStats.TotalRolls}} rolls). At least 30 rolls are recommended.</p>
+        {{else}}
+            {{if .BiasStats.IsBiased}}
+            <p>❌ <strong>Bias Detected.</strong> The rolls show a statistically significant deviation from fairness.</p>
+            {{else}}
+            <p>✅ <strong>No Bias Detected.</strong> The rolls appear to be fair.</p>
+            {{end}}
+        {{end}}
+        <ul>
+            <li><strong>Chi-Squared (χ²):</strong> {{printf "%.4f" .BiasStats.ChiSquared}}
+                <details>
+                    <summary>Explain</summary>
+                    <em>Measures deviation from fairness. Higher is more biased.</em>
+                </details>
+            </li>
+            <li><strong>P-Value:</strong> {{printf "%.4f" .BiasStats.PValue}}
+                <details>
+                    <summary>Explain</summary>
+                    <em>Probability the die is fair. A value < 0.05 indicates significant bias.</em>
+                </details>
+            </li>
+            <li><strong>Cramér's V:</strong> {{printf "%.4f" .BiasStats.CramersV}}
+                <details>
+                    <summary>Explain</summary>
+                    <em>Bias effect size from 0 (none) to 1 (max).</em>
+                </details>
+            </li>
+            <li><strong>Total Variation Distance:</strong> {{printf "%.4f" .BiasStats.TotalVariationDistance}}
+                <details>
+                    <summary>Explain</summary>
+                    <em>Overall bias score from 0 (fair) to 1 (max).</em>
+                </details>
+            </li>
+        </ul>
+    </article>
+    <article>
+        <header><strong>Per-Face Analysis</strong></header>
+        <details>
+            <summary>Explain</summary>
+            <p><em>The Standardized Residual shows which faces are biased. A value > 2 or < -2 is significant.</em></p>
+        </details>
+        <table>
+            <thead>
+                <tr>
+                    <th>Face</th>
+                    <th>Observed</th>
+                    <th>Expected</th>
+                    <th>Std. Residual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .BiasStats.PerFaceStats}}
+                <tr>
+                    <td>{{.Face}}</td>
+                    <td>{{.ObservedFrequency}}</td>
+                    <td>{{printf "%.2f" .ExpectedFrequency}}</td>
+                    <td>{{printf "%.2f" .StandardizedResidual}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </article>
+</div>
+{{end}}
+
 <script>
     (function () {
         const ctx = document.getElementById('rollChart').getContext('2d');
