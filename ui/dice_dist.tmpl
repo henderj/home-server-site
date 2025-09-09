@@ -11,7 +11,7 @@
 <div>
     <h2>{{.Set.Name}} {{.Die.Name}}</h2>
     <form action="/dice/add-roll" method="POST" id="add-rolls-form">
-        <textarea name="rolls" rows="4" cols="30" placeholder="Enter rolls, one per line"></textarea><br>
+        <textarea name="rolls" rows="4" cols="30" placeholder="Enter rolls, one per line" autofocus></textarea><br>
         <input type="hidden" name="die_id" value="{{.Die.ID}}">
         <input type="hidden" name="set_id" value="{{.Set.ID}}">
         <button type="submit">Add Rolls</button>
