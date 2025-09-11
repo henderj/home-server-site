@@ -166,7 +166,7 @@ func (app *application) addDiceSetHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	http.Redirect(w, r, "/dice", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (app *application) addRollHandler(w http.ResponseWriter, r *http.Request) {

@@ -49,18 +49,13 @@ func (app *application) routes(mux *http.ServeMux) {
 	fs := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
 
-	mux.HandleFunc("GET /{$}", app.homeHandler)
-
-	mux.HandleFunc("GET /dice", app.diceHandler)
+	mux.HandleFunc("GET /{$}", app.diceHandler)
 	mux.HandleFunc("POST /dice/add-set", app.addDiceSetHandler)
 	mux.HandleFunc("POST /dice/add-roll", app.addRollHandler)
 	mux.HandleFunc("GET /dice/view-set", app.viewSetHandler)
 	mux.HandleFunc("DELETE /dice/delete-set", app.deleteDiceSetHandler)
 }
 
-func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
-	app.renderPage(w, r, "./ui/home.tmpl", nil)
-}
 
 // Connects to and sets up DB.
 // Will exit process if connection or setup fails
